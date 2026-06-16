@@ -1,44 +1,55 @@
-# FESTEJO Protocol Ecosystem (FRSP v1.0)
+# FESTEJO Ecosystem
 
-FESTEJO is a modular, protocol-based ecosystem built on Stellar, utilizing a deterministic Rust execution layer to ensure cryptographic and logic consistency across distributed domain services.
+FESTEJO is a distributed, modular protocol-based ecosystem built on Stellar. It orchestrates high-performance domain services through a deterministic, Rust-backed execution layer, ensuring cryptographic integrity and logical consistency across distributed services.
 
-## Core Architectural Principle: The FRSP v1.0 Standard
-Every operation strictly adheres to the FESTEJO Rust Spec Protocol (FRSP) v1.0. The system operates on an immutable pipeline:
+## Overview
 
-**Actor → Action → Proof → Validation → StellarRecord → Persistence**
+FESTEJO has transitioned from a legacy Django monorepo into a 5-repository distributed system. This architecture separates orchestration (Python) from deterministic execution (Rust), adhering to the **FRSP (FESTEJO Rust Spec Protocol)**.
 
-### Determinism via FRSP
-To eliminate cross-repo drift, FESTEJO uses a unified Rust core (`festejo-frsp`) providing:
-- **Canonical Hashing:** `SHA256(canonical_json(data))` ensures identical outputs for identical inputs across all repositories.
-- **Strict Proof Logic:** Centralized proof generation, signature verification, and replay protection.
-- **Shared Data Models:** Universal `Actor`, `Action`, `Proof`, and `StellarRecord` structures.
+## Architectural Principles
 
-## Repository Structure
+1.  **Protocol-First:** Every operation follows the immutable pipeline:
+    **Actor → Action → Proof → Validation → StellarRecord → Persistence**
+2.  **Deterministic Engine:** All cryptographic, hashing, and validation logic is centralized in the `festejo-frsp` crate (Rust), ensuring "same input, same output" across all domain services.
+3.  **Service-Oriented:** Domain services (`events`, `identity`, `economy`) are independently deployable and communicate strictly via validated protocol objects.
+4.  **Blockchain Segregation:** Stellar blockchain interactions are encapsulated exclusively within `festejo-stellar-sdk`.
 
-| Repository | Domain | Role |
+## Ecosystem Components
+
+| Component | Responsibility | Language/Tech |
 | :--- | :--- | :--- |
+| `festejo-frsp` | Infrastructure | Shared Rust crate implementing the FRSP v1.0 standard. |
 | `festejo-core-protocol` | Orchestration | Pipeline execution engine & audit logging. |
-| `festejo-stellar-sdk` | Blockchain | Sole interface for Stellar signing & contract interactions. |
-| `festejo-events` | Domain | Event production (Actions). |
-| `festejo-identity` | Domain | Identity graph & passport system. |
-| `festejo-economy` | Domain | Rewards, Grants, Marketplace. |
-| `festejo-frsp` | Infrastructure | Shared Rust crate implementing the protocol specification. |
+| `festejo-stellar-sdk` | Blockchain | Interface for Stellar signing & contract interactions. |
+| `festejo-events` | Domain Service | Event lifecycle management & attendance. |
+| `festejo-identity` | Domain Service | Identity graph, reputation, & passport system. |
+| `festejo-economy` | Domain Service | Rewards engine, grants protocol, & marketplace. |
+| `apps/legacy_app` | Compatibility | Read-only routing layer for legacy web support. |
 
-## Usage & Development
+## Development & Build Workflow
 
-### Adding FRSP Compliance to a Domain
-1. **Dependency:** Include `festejo-frsp` in the `Cargo.toml` of the repository's Rust module.
-2. **Implementation:** Use `festejo_frsp::crypto` and `festejo_frsp::proof` for all deterministic operations (no reimplementation of crypto allowed in Python).
-3. **Bindings:** Expose required API surface (e.g., `generate_hash`, `check_replay`) via `pyo3` to the Python orchestration layer.
+FESTEJO utilizes a hybrid Python-Rust architecture. Each repository is responsible for building its own Rust extensions.
 
-### Building
-```bash
-# Compile Rust extensions
-cd rust
-cargo build --release
-cd ..
-maturin develop --release
-```
+### Prerequisites
+- Python 3.11+
+- Rust toolchain
+- `maturin`
 
-## Legacy Compatibility
-- **apps/legacy_app**: Read-only routing/compatibility layer with zero business logic execution rights.
+### Build & Integration
+1.  **Rust Layer:** Each repository contains a `rust/` crate.
+    ```bash
+    cd rust
+    cargo build --release
+    ```
+2.  **Binding Layer:** Use `maturin` to bridge Rust into Python.
+    ```bash
+    # From the repository root
+    maturin develop --release
+    ```
+3.  **Dependency Flow:** Domain repositories (`festejo-events`, etc.) define `festejo-frsp` in their `Cargo.toml`. Python orchestrators import these via local namespaces.
+
+## Compliance
+All development must adhere to the **FRSP (FESTEJO Rust Spec Protocol)**.
+- **No duplication:** Cryptographic logic must never be reimplemented in Python.
+- **Canonicalization:** Use `festejo-frsp` for all hashing (`SHA256(canonical_json(data))`).
+- **Isolation:** No circular dependencies between repositories are permitted.
