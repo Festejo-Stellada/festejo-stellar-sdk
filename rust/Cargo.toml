@@ -1,0 +1,12 @@
+[package]
+name = "festejo-rust-stellar"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "festejo_rust_stellar"
+crate-type = ["cdylib"]
+
+[dependencies]
+festejo-frsp = { path = "../../festejo-frsp" }
+pyo3 = { version = "0.20", features = ["extension-module"] }
